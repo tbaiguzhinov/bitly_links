@@ -8,21 +8,25 @@ from dotenv import load_dotenv
 
 def shorten_link(headers, url):
     body = {"long_url": url}
-    response = requests.post("https://api-ssl.bitly.com/v4/shorten",
-                             headers=headers, json=body)
-    response_content = response.json()
+    response = requests.post(
+        "https://api-ssl.bitly.com/v4/shorten",
+        headers=headers,
+        json=body
+    )
     if response.ok:
-        bitlink = response_content["link"]
+        bitlink = response.json()["link"]
         return bitlink
     else:
-        return response_content["message"]
+        return "Provided url is incorrect"
 
 
 def count_clicks(headers, bitlink):
     parsed_url = urlparse(bitlink)
+    bitlink = f"{parsed_url.netloc}{parsed_url.path}"
     response = requests.get(
-      f"https://api-ssl.bitly.com/v4/bitlinks/{parsed_url.netloc}{parsed_url.path}/clicks/summary",
-      headers=headers)
+      f"https://api-ssl.bitly.com/v4/bitlinks/{bitlink}/clicks/summary",
+      headers=headers
+    )
     if response.ok:
         return response.json()["total_clicks"]
     else:
@@ -32,8 +36,11 @@ def count_clicks(headers, bitlink):
 def is_bitlink(headers, url):
     parsed_url = urlparse(url)
     body = {"bitlink_id": f"{parsed_url.netloc}{parsed_url.path}"}
-    response = requests.post("https://api-ssl.bitly.com/v4/expand",
-                             headers=headers, json=body)
+    response = requests.post(
+        "https://api-ssl.bitly.com/v4/expand",
+        headers=headers,
+        json=body
+    )
     return response.ok
 
 
@@ -41,9 +48,12 @@ def main():
     load_dotenv()
     bitlink_token = os.environ['BITLINK_TOKEN']
     parser = argparse.ArgumentParser()
-    parser.add_argument("url", help="Return bitlink from usual url, \
-                        return number of clicks from bitlink",
-                        type=str)
+    parser.add_argument(
+        "url",
+        help="Return bitlink from usual url, \
+            return number of clicks from bitlink",
+        type=str
+    )
     url = parser.parse_args().url
     headers = {"Authorization": f"Bearer {bitlink_token}"}
     if is_bitlink(headers, url):
